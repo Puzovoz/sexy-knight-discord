@@ -15,11 +15,6 @@ bot = commands.Bot(command_prefix='%')
 with open("database.json", encoding="utf-8") as json_file:
   data = json.load(json_file)
 
-members = data["members"]
-for member in filter(lambda m: "birthday" in members[m], members.keys()):
-  if "birthday" in members[member]:
-    print(members[member]["birthday"])
-
 # Command for setting a new birthday for the caller.
 # Example: `%birthday 01.01`
 @bot.command()
