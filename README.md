@@ -10,13 +10,11 @@ Requires `database.json` in the root folder to work with following format:
 ```json
 {
   "members": [
-    {
-      "name": "member1",
-      "id": 123456789012345678
+    "123456789012345678": {
+      "name": "member1"
     },
-    {
+    "098765432109876543": {
       "name": "member2",
-      "id": 098765432109876543,
       "birthday": "01.12"
     }
   ]
