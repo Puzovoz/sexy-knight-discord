@@ -58,9 +58,11 @@ async def birthday(ctx, arg):
         "November",
         "December"
       ]
+      ordinal = lambda n: "%d%s" % (n, {1:"st", 2:"nd", 3:"rd"}
+                                    .get(n if n<20 else n%10, "th"))
       # State that saving the birthday was successful
       await ctx.send("Success! Saved {0} of {1} birthday "
-                     "for <@{2}>.".format(arg[:2],
+                     "for <@{2}>.".format(ordinal(int(arg[:2])),
                                           months[int(arg[3:5])-1],
                                           author_id))
     else:
@@ -77,7 +79,7 @@ async def check_for_birthday():
     current_date = datetime.datetime.utcnow()
     if current_date.hour == 12:
       formatted_date = "{0.day}.{0.month}".format(current_date)
-      channel = client.get_channel(604388374324838532)  # '#birthdays' ID
+      channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
       
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
@@ -87,7 +89,7 @@ async def check_for_birthday():
       for member in cur.fetchall():
         await channel.send("@everyone, "
                            "it's <@{0}>'s birthday today! 🥳\n "
-                           "🎉🎉 Woo! 🎉🎉").format(member_id)
+                           "🎉🎉 Woo! 🎉🎉").format(member[0])
       
       cur.close()
       conn.close()
