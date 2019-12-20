@@ -12,7 +12,7 @@ GUILD        = os.getenv('DISCORD_GUILD')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 bot = commands.Bot(command_prefix='SxK ')
-  
+
 # Command for setting a new birthday for the caller.
 # Example: `%birthday 01.01`
 @bot.command()
@@ -89,7 +89,7 @@ async def check_for_birthday():
       for member in cur.fetchall():
         await channel.send("@everyone, "
                            "it's <@{0}>'s birthday today! 🥳\n "
-                           "🎉🎉 Woo! 🎉🎉").format(member[0])
+                           "🎉🎉 Woo! 🎉🎉".format(member[0]))
       
       cur.close()
       conn.close()
