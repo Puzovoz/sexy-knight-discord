@@ -43,9 +43,26 @@ async def birthday(ctx, arg):
       conn.commit()
       cur.close()
       conn.close()
+      
+      months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
       # State that saving the birthday was successful
-      await ctx.send("Success! Saved `" + arg + "` birthday "
-                     "for <@{0}>.".format(author_id))
+      await ctx.send("Success! Saved {0} of {1} birthday "
+                     "for <@{2}>.".format(arg[:2],
+                                          months[int(arg[3:5])],
+                                          author_id))
     else:
       await ctx.send("That doesn't look right.\n"
                      "Make sure you send your birthday in `dd.mm` format. "
