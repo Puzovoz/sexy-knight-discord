@@ -12,7 +12,7 @@ GUILD        = os.getenv('DISCORD_GUILD')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 bot = commands.Bot(command_prefix='SxK ')
-
+  
 # Command for setting a new birthday for the caller.
 # Example: `%birthday 01.01`
 @bot.command()
@@ -77,9 +77,9 @@ async def birthday(ctx, arg):
 async def check_for_birthday():
   while True:
     current_date = datetime.datetime.utcnow()
-    if current_date.hour == 12:
-      formatted_date = "{0.day}.{0.month}".format(current_date)
-      channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
+    channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
+    if current_date.hour == 12 and channel:
+      formatted_date = "{0.day}.{0.month}".format(current_date)      
       
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
@@ -99,7 +99,7 @@ async def check_for_birthday():
       await asyncio.sleep(3600)
     
     # The coroutine works once 15 minutes
-    await asyncio.sleep(900)
+    await asyncio.sleep(300)
 
 if __name__ == "__main__":
   bot.loop.create_task(check_for_birthday())
