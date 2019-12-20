@@ -1,5 +1,5 @@
 import os
-import json
+import psycopg2
 import datetime
 import discord
 from discord.ext import commands
@@ -7,13 +7,11 @@ import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
+TOKEN        = os.getenv('DISCORD_TOKEN')
+GUILD        = os.getenv('DISCORD_GUILD')
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 bot = commands.Bot(command_prefix='%')
-
-with open("database.json", encoding="utf-8") as json_file:
-  data = json.load(json_file)
 
 # Command for setting a new birthday for the caller.
 # Example: `%birthday 01.01`
@@ -24,21 +22,30 @@ async def birthday(ctx, arg):
     and int(arg[3:5]) in range(1, 13) \
     and arg[2]        == ".":
       author_id = str(ctx.author.id)
-      if author_id in data["members"]:
-        members[author_id]["birthday"] = arg[:5]
+      
+      conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+      cur = conn.cursor()      
+      cur.execute("SELECT * FROM members "
+                  "WHERE id='{0}';".format(ctx.author.id))
+      member_info = cur.fetchone()
+      if member_info:
+        cur.execute("UPDATE members "
+                    "SET birthday='{0}' "
+                    "WHERE id='{1}';".format(arg[:5], member_info[0]))
         
       # Make a new entry in case a member is not yet in the database
       else:
-        data["members"][author_id] = {
-          "name": ctx.author.name,
-          "birthday": arg[:5]
-        }
+        cur.execute("INSERT INTO members (id, name, birthday) "
+                    "VALUES ('{0}', '{1}', '{2}');".format(author_id,
+                                                           ctx.author.name,
+                                                           arg[:5]))
       
-      with open("database.json", "w", encoding="utf-8") as outfile:
-        json.dump(data, outfile, indent=2)
-        
+      conn.commit()
+      cur.close()
+      conn.close()
       # State that saving the birthday was successful
-      await ctx.send("Success! Saved `" + arg + "`.")
+      await ctx.send("Success! Saved `" + arg + "` birthday "
+                     "for <@{0}>.".format(author_id))
     else:
       await ctx.send("That doesn't look right.\n"
                      "Make sure you send your birthday in `dd.mm` format. "
@@ -55,14 +62,18 @@ async def check_for_birthday():
       formatted_date = "{0.day}.{0.month}".format(current_date)
       channel = client.get_channel(604388374324838532)  # '#birthdays' ID
       
-      # Filter finds members whose birthdays we know
-      members = data["members"]
-      for member_id in filter(lambda m: "birthday" in members[m], members.keys()):
-        if channel and formatted_date == members[member_id]["birthday"]:
-          # Send a message if any members have a birthday today
-          await channel.send("@everyone, "
-                             "it's <@{0}>'s birthday today! 🥳\n "
-                             "🎉🎉 Woo! 🎉🎉").format(member_id)
+      conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+      cur = conn.cursor()
+      cur.execute("SELECT * FROM members "
+                  "WHERE birthday='{0}'".format(formatted_date))      
+      
+      for member in cur.fetchall():
+        await channel.send("@everyone, "
+                           "it's <@{0}>'s birthday today! 🥳\n "
+                           "🎉🎉 Woo! 🎉🎉").format(member_id)
+      
+      cur.close()
+      conn.close()
       
       # Prevent the bot from sending announcements
       # multiple times in a single day
