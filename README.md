@@ -9,7 +9,7 @@ Requires `database.json` in the root folder to work with following format:
 
 ```json
 {
-  "members": [
+  "members": {
     "123456789012345678": {
       "name": "member1"
     },
@@ -17,6 +17,6 @@ Requires `database.json` in the root folder to work with following format:
       "name": "member2",
       "birthday": "01.12"
     }
-  ]
+  }
 }
 ```
