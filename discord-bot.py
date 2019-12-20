@@ -11,7 +11,7 @@ TOKEN        = os.getenv('DISCORD_TOKEN')
 GUILD        = os.getenv('DISCORD_GUILD')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-bot = commands.Bot(command_prefix='%')
+bot = commands.Bot(command_prefix='SxK ')
 
 # Command for setting a new birthday for the caller.
 # Example: `%birthday 01.01`
