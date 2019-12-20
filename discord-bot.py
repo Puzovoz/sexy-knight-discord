@@ -61,7 +61,7 @@ async def birthday(ctx, arg):
       # State that saving the birthday was successful
       await ctx.send("Success! Saved {0} of {1} birthday "
                      "for <@{2}>.".format(arg[:2],
-                                          months[int(arg[3:5])],
+                                          months[int(arg[3:5])-1],
                                           author_id))
     else:
       await ctx.send("That doesn't look right.\n"
