@@ -41,15 +41,15 @@ async def blacklist(ctx, arg):
       
       cur.close()
       conn.close()      
-      await ctx.send("Added " + arg.split(" ")[0].title())
+      await ctx.send("Added " + arg.split(" ")[0].title() + "to the blacklist!")
     except psycopg2.errors.UniqueViolation:
       await ctx.send("Seems like this player is already "
                      "in the blacklist.\n"
                      "Check for errors and try again.")
   else:
-    ctx.send("This name looks incorrect.\n"
-             "Make sure you include dashes instead of spaces "
-             "and the name fits the game's naming rules.")
+    await ctx.send("This name looks incorrect.\n"
+                   "Make sure you include dashes instead of spaces "
+                   "and the name fits the game's naming rules.")
 
 # Command for setting a new birthday for the caller.
 # Example: `SxK birthday 01.01`
