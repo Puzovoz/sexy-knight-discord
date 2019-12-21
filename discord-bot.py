@@ -16,7 +16,7 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 bot = commands.Bot(command_prefix='SxK ')
 
 @bot.command()
-@commands.has_permissions("administrator")
+@commands.has_permissions(administrator=True)
 async def blacklist(ctx, arg):
   name = arg.split(" ")[0].title()
   if len(name) <= 18 \
