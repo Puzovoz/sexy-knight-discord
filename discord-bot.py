@@ -33,7 +33,9 @@ async def blacklist(ctx, arg):
       officers = bot.get_channel(614159495085686794)
       blacklist = await officers.fetch_message(657883991692541972)
       
-      cur.execute("SELECT * FROM blacklist;")
+      cur.execute("SELECT * FROM blacklist "
+                  "ORDER BY "
+                  "  name ASC;")
       await blacklist.edit(content=("**BLACKLIST**\n"
                                     + "\n".join(i[0] for i in cur.fetchall())))
       
