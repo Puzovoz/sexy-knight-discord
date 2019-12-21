@@ -15,6 +15,39 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 
 bot = commands.Bot(command_prefix='SxK ')
 
+@bot.command()
+async def blacklist(ctx, arg):
+  name = arg.split(" ")[0].title()
+  if len(name) <= 18 \
+  and name.count("-") <= 3 \
+  and sum(c.isdigit() for c in name) == 0:
+    try:
+      conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+      cur = conn.cursor()
+        
+      cur.execute("INSERT INTO blacklist (name) "
+                  "VALUES ('{0}');".format(name))
+      conn.commit()
+      
+      officers = bot.get_channel(614159495085686794)
+      blacklist = await officers.fetch_message(657883991692541972)
+      
+      cur.execute("SELECT * FROM blacklist;")
+      await blacklist.edit(content=("**BLACKLIST**\n"
+                                    + "\n".join(i[0] for i in cur.fetchall())))
+      
+      cur.close()
+      conn.close()      
+      await ctx.send("Added " + arg.split(" ")[0].title())
+    except psycopg2.errors.UniqueViolation:
+      await ctx.send("Seems like this player is already "
+                     "in the blacklist.\n"
+                     "Check for errors and try again.")
+  else:
+    ctx.send("This name looks incorrect.\n"
+             "Make sure you include dashes instead of spaces "
+             "and the name fits the game's naming rules.")
+
 # Command for setting a new birthday for the caller.
 # Example: `SxK birthday 01.01`
 @bot.command()
