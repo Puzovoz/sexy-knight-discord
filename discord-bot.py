@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 import os
+from unicodedata import combining
 import psycopg2
 import datetime
 import discord
@@ -14,7 +16,7 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 bot = commands.Bot(command_prefix='SxK ')
 
 # Command for setting a new birthday for the caller.
-# Example: `%birthday 01.01`
+# Example: `SxK birthday 01.01`
 @bot.command()
 async def birthday(ctx, arg):
   try:
@@ -40,10 +42,6 @@ async def birthday(ctx, arg):
                                                            ctx.author.name,
                                                            arg[:5]))
       
-      conn.commit()
-      cur.close()
-      conn.close()
-      
       months = [
         "January",
         "February",
@@ -60,6 +58,35 @@ async def birthday(ctx, arg):
       ]
       ordinal = lambda n: "%d%s" % (n, {1:"st", 2:"nd", 3:"rd"}
                                     .get(n if n<20 else n%10, "th"))
+      
+      channel = bot.get_channel(604388374324838532)
+      birthday_list = await channel.fetch_message(657232655196094464)
+      cur.execute("SELECT * FROM members "
+                  "WHERE "
+                  "  birthday IS NOT NULL "
+                  "ORDER BY "
+                  "  SUBSTRING(birthday, 4, 2) ASC,"
+                  "  SUBSTRING(birthday, 1, 2) ASC;")
+      birthday_result = cur.fetchall()
+      
+      # Update pinned message with a list of all birthdays
+      await birthday_list.edit(content="```\n"
+                               + "\n".join("{0}{1}{2:>4} {3}".format(
+                                 row[1],
+                                 # Regular Python formatting works
+                                 # incorrectly with Unicode characters,
+                                 # so a manual method was implemented
+                                 ' ' * (25-len(''.join(c for c in row[1]
+                                                       if combining(c)==0))),
+                                 ordinal(int(row[2][:2])),
+                                 months[int(row[2][3:5])-1])
+                                 for row in birthday_result)
+                               + "\n```")
+      
+      conn.commit()
+      cur.close()
+      conn.close()
+      
       # State that saving the birthday was successful
       await ctx.send("Success! Saved {0} of {1} birthday "
                      "for <@{2}>.".format(ordinal(int(arg[:2])),
@@ -99,7 +126,7 @@ async def check_for_birthday():
       await asyncio.sleep(3600)
     
     # The coroutine works once 15 minutes
-    await asyncio.sleep(300)
+    await asyncio.sleep(900)
 
 if __name__ == "__main__":
   bot.loop.create_task(check_for_birthday())
