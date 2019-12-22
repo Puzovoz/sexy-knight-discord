@@ -37,9 +37,12 @@ async def blacklist(ctx, arg):
                 "WHERE name='{0}'".format(name))
     conn.commit()
     
-    await update_blacklist(cur)
-    await ctx.send("Removed {0} from the blacklist!".format(name))
-    
+    if cur.rowcount > 0:
+      await update_blacklist(cur)
+      await ctx.send("Removed {0} from the blacklist!".format(name))
+    else:
+      await ctx.send("Couldn't find {0} in the blacklist.".format(name))
+      
   else:
     try:
       cur.execute("INSERT INTO blacklist (name) "
