@@ -13,7 +13,7 @@ TOKEN        = os.getenv('DISCORD_TOKEN')
 GUILD        = os.getenv('DISCORD_GUILD')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-bot = commands.Bot(command_prefix='SxK ')  
+bot = commands.Bot(command_prefix='SxK ')
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -22,30 +22,31 @@ async def blacklist(ctx, arg):
   if len(name) <= 18 \
   and name.count("-") <= 3 \
   and sum(c.isdigit() for c in name) == 0:
-    try:
-      conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-      cur = conn.cursor()
-        
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    cur = conn.cursor()    
+    try:        
       cur.execute("INSERT INTO blacklist (name) "
                   "VALUES ('{0}');".format(name))
       conn.commit()
       
-      officers = bot.get_channel(614159495085686794)
-      blacklist = await officers.fetch_message(657883991692541972)
-      
-      cur.execute("SELECT * FROM blacklist "
-                  "ORDER BY "
-                  "  name ASC;")
-      await blacklist.edit(content=("**BLACKLIST**\n"
-                                    + "\n".join(i[0] for i in cur.fetchall())))
-      
-      cur.close()
-      conn.close()
-      await ctx.send("Added {0} to the blacklist!".format(name))
     except psycopg2.errors.UniqueViolation:
       await ctx.send("Seems like this player is already "
                      "in the blacklist.\n"
-                     "Check for errors and try again.")
+                     "Check for errors and try again.")  
+    
+    # The blacklist should be updated after adding a new value
+    officers = bot.get_channel(614159495085686794)
+    blacklist = await officers.fetch_message(657883991692541972)    
+    cur.execute("SELECT * FROM blacklist "
+                "ORDER BY "
+                "  name ASC;")
+    await blacklist.edit(content=("**BLACKLIST**\n"
+                                  + "\n".join(i[0] for i in cur.fetchall())))
+    
+    cur.close()
+    conn.close()
+    await ctx.send("Added {0} to the blacklist!".format(name))
+    
   else:
     await ctx.send("This name looks incorrect.\n"
                    "Make sure you include dashes instead of spaces "
@@ -62,21 +63,16 @@ async def birthday(ctx, arg):
       author_id = str(ctx.author.id)
       
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-      cur = conn.cursor()      
-      cur.execute("SELECT * FROM members "
-                  "WHERE id='{0}';".format(ctx.author.id))
-      member_info = cur.fetchone()
-      if member_info:
-        cur.execute("UPDATE members "
-                    "SET birthday='{0}' "
-                    "WHERE id='{1}';".format(arg[:5], member_info[0]))
-        
-      # Make a new entry in case a member is not yet in the database
-      else:
-        cur.execute("INSERT INTO members (id, name, birthday) "
-                    "VALUES ('{0}', '{1}', '{2}');".format(author_id,
-                                                           ctx.author.name,
-                                                           arg[:5]))
+      cur = conn.cursor()
+      
+      cur.execute("INSERT INTO members (id, name, birthday) "
+                  "VALUES ('{0}', '{1}', '{2}') "
+                  "ON CONFLICT (id) DO UPDATE "
+                  "SET birthday='{2}';".format(author_id,
+                                               ctx.author.name,
+                                               arg[:5]))
+      
+      conn.commit()
       
       months = [
         "January",
@@ -119,11 +115,9 @@ async def birthday(ctx, arg):
                                  for row in birthday_result)
                                + "\n```")
       
-      conn.commit()
       cur.close()
       conn.close()
       
-      # State that saving the birthday was successful
       await ctx.send("Success! Saved {0} of {1} birthday "
                      "for <@{2}>.".format(ordinal(int(arg[:2])),
                                           months[int(arg[3:5])-1],
