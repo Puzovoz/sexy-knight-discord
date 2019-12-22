@@ -18,23 +18,7 @@ bot = commands.Bot(command_prefix='SxK ')
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def blacklist(ctx, arg):
-  name = arg.split(" ")[0].title()
-  if len(name) <= 18 \
-  and name.count("-") <= 3 \
-  and sum(c.isdigit() for c in name) == 0:
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-    cur = conn.cursor()    
-    try:        
-      cur.execute("INSERT INTO blacklist (name) "
-                  "VALUES ('{0}');".format(name))
-      conn.commit()
-      
-    except psycopg2.errors.UniqueViolation:
-      await ctx.send("Seems like this player is already "
-                     "in the blacklist.\n"
-                     "Check for errors and try again.")  
-    
-    # The blacklist should be updated after adding a new value
+  async def update_blacklist(cur):
     officers = bot.get_channel(614159495085686794)
     blacklist = await officers.fetch_message(657883991692541972)    
     cur.execute("SELECT * FROM blacklist "
@@ -42,15 +26,34 @@ async def blacklist(ctx, arg):
                 "  name ASC;")
     await blacklist.edit(content=("**BLACKLIST**\n"
                                   + "\n".join(i[0] for i in cur.fetchall())))
-    
-    cur.close()
-    conn.close()
-    await ctx.send("Added {0} to the blacklist!".format(name))
+  
+  name = arg.split(" ")[0].title()  
+  conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+  cur = conn.cursor()
+  
+  if name[:2] == name[-2:] == "~~":
+    name = name.strip("~")
+    cur.execute("DELETE FROM blacklist "
+                "WHERE name='{0}'".format(name))
+    update_blacklist(cur)
+    await ctx.send("Removed {0} from the blacklist!".format(name))    
     
   else:
-    await ctx.send("This name looks incorrect.\n"
-                   "Make sure you include dashes instead of spaces "
-                   "and the name fits the game's naming rules.")
+    try:
+      cur.execute("INSERT INTO blacklist (name) "
+                  "VALUES ('{0}');".format(name))
+      conn.commit()
+      
+    except psycopg2.errors.UniqueViolation:
+      await ctx.send("Seems like this player is already "
+                     "in the blacklist.\n"
+                     "Check for errors and try again.")
+    
+    update_blacklist(cur)
+    await ctx.send("Added {0} to the blacklist!".format(name))    
+  
+  cur.close()
+  conn.close()
 
 # Command for setting a new birthday for the caller.
 # Example: `SxK birthday 01.01`
