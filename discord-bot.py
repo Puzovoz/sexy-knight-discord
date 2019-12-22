@@ -37,7 +37,7 @@ async def blacklist(ctx, arg):
                 "WHERE name='{0}'".format(name))
     conn.commit()
     
-    update_blacklist(cur)
+    await update_blacklist(cur)
     await ctx.send("Removed {0} from the blacklist!".format(name))
     
   else:
@@ -46,7 +46,7 @@ async def blacklist(ctx, arg):
                   "VALUES ('{0}');".format(name))
       conn.commit()
       
-      update_blacklist(cur)
+      await update_blacklist(cur)
       await ctx.send("Added {0} to the blacklist!".format(name))
       
     except psycopg2.errors.UniqueViolation:
