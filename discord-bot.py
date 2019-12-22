@@ -41,7 +41,7 @@ async def blacklist(ctx, arg):
       
       cur.close()
       conn.close()
-      await ctx.send("Added {0} to the blacklist!").format(name)
+      await ctx.send("Added {0} to the blacklist!".format(name))
     except psycopg2.errors.UniqueViolation:
       await ctx.send("Seems like this player is already "
                      "in the blacklist.\n"
