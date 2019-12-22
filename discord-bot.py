@@ -13,7 +13,7 @@ TOKEN        = os.getenv('DISCORD_TOKEN')
 GUILD        = os.getenv('DISCORD_GUILD')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-bot = commands.Bot(command_prefix='SxK ')
+bot = commands.Bot(command_prefix='SxK ')  
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -40,8 +40,8 @@ async def blacklist(ctx, arg):
                                     + "\n".join(i[0] for i in cur.fetchall())))
       
       cur.close()
-      conn.close()      
-      await ctx.send("Added " + arg.split(" ")[0].title() + "to the blacklist!")
+      conn.close()
+      await ctx.send("Added {0} to the blacklist!").format(name)
     except psycopg2.errors.UniqueViolation:
       await ctx.send("Seems like this player is already "
                      "in the blacklist.\n"
