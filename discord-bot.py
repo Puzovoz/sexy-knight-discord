@@ -35,8 +35,10 @@ async def blacklist(ctx, arg):
     name = name.strip("~")
     cur.execute("DELETE FROM blacklist "
                 "WHERE name='{0}'".format(name))
+    conn.commit()
+    
     update_blacklist(cur)
-    await ctx.send("Removed {0} from the blacklist!".format(name))    
+    await ctx.send("Removed {0} from the blacklist!".format(name))
     
   else:
     try:
@@ -44,14 +46,14 @@ async def blacklist(ctx, arg):
                   "VALUES ('{0}');".format(name))
       conn.commit()
       
+      update_blacklist(cur)
+      await ctx.send("Added {0} to the blacklist!".format(name))
+      
     except psycopg2.errors.UniqueViolation:
       await ctx.send("Seems like this player is already "
                      "in the blacklist.\n"
                      "Check for errors and try again.")
-    
-    update_blacklist(cur)
-    await ctx.send("Added {0} to the blacklist!".format(name))    
-  
+      
   cur.close()
   conn.close()
 
