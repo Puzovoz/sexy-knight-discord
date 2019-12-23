@@ -32,7 +32,7 @@ async def blacklist(ctx, arg):
   cur = conn.cursor()
   
   if name[:2] == name[-2:] == "~~":
-    name = name.strip("~")
+    name = name.strip("~*")
     cur.execute("DELETE FROM blacklist "
                 "WHERE name='{0}'".format(name))
     conn.commit()
@@ -45,6 +45,7 @@ async def blacklist(ctx, arg):
       
   else:
     try:
+      name = name.strip("~*")
       cur.execute("INSERT INTO blacklist (name) "
                   "VALUES ('{0}');".format(name))
       conn.commit()
