@@ -43,7 +43,7 @@ async def blacklist(ctx, arg=False):
     await ctx.send(generate_blacklist(cur), delete_after=15)
     cur.close()
     conn.close()
-    break
+    return
   
   # And will insert or delete the name from the database otherwise.
   name = arg.split(" ")[0].title()
