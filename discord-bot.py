@@ -15,22 +15,41 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 
 bot = commands.Bot(command_prefix='SxK ')
 
+# Command for administrators that works with a pinned message, blacklist.
+# `SxK blacklist`: passing no arguments will briefly show the list in chat.
+# `SxK blacklist name`: passing a name will add that name to the blacklist
+# and update the pinned message.
+# `SxK blacklist ~~name~~`: passing a name with strikethrough formatting
+# will instead remove that name from the blacklist.
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def blacklist(ctx, arg):
-  async def update_blacklist(cur):
-    officers = bot.get_channel(614159495085686794)
-    blacklist = await officers.fetch_message(657883991692541972)    
+async def blacklist(ctx, arg=False):
+  def generate_blacklist(cur):
     cur.execute("SELECT * FROM blacklist "
                 "ORDER BY "
-                "  name ASC;")
-    await blacklist.edit(content=("**BLACKLIST**\n"
-                                  + "\n".join(i[0] for i in cur.fetchall())))
+                "  name ASC;")    
+    return "**BLACKLIST**\n" + "\n".join(i[0] for i in cur.fetchall())
   
-  name = arg.split(" ")[0].title()  
+  async def update_blacklist(cur):
+    officers = bot.get_channel(614159495085686794)
+    blacklist = await officers.fetch_message(657883991692541972)
+    await blacklist.edit(content=generate_blacklist(cur))
+  
   conn = psycopg2.connect(DATABASE_URL, sslmode='require')
   cur = conn.cursor()
   
+  # The command will show the blacklist for 15 secs if no arguments are passed.
+  if arg is False:
+    await ctx.send(generate_blacklist(cur), delete_after=15)
+    cur.close()
+    conn.close()
+    break
+  
+  # And will insert or delete the name from the database otherwise.
+  name = arg.split(" ")[0].title()
+  
+  # Delete command
+  # `blacklist ~~name~~`
   if name[:2] == name[-2:] == "~~":
     name = name.strip("~*")
     cur.execute("DELETE FROM blacklist "
@@ -42,7 +61,9 @@ async def blacklist(ctx, arg):
       await ctx.send("Removed {0} from the blacklist!".format(name))
     else:
       await ctx.send("Couldn't find {0} in the blacklist.".format(name))
-      
+  
+  # Insert command
+  # `blacklist name`
   else:
     try:
       name = name.strip("~*")
@@ -62,6 +83,7 @@ async def blacklist(ctx, arg):
   conn.close()
 
 # Command for setting a new birthday for the caller.
+# The pinned message with birthday list will also be updated.
 # Example: `SxK birthday 01.01`
 @bot.command()
 async def birthday(ctx, arg):
