@@ -23,7 +23,7 @@ bot = commands.Bot(command_prefix='SxK ')
 # will instead remove that name from the blacklist.
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def blacklist(ctx, arg=False):
+async def blacklist(ctx, arg=''):
   def generate_blacklist(cur):
     cur.execute("SELECT * FROM blacklist "
                 "ORDER BY "
@@ -39,7 +39,7 @@ async def blacklist(ctx, arg=False):
   cur = conn.cursor()
   
   # The command will show the blacklist for 15 secs if no arguments are passed.
-  if arg is False:
+  if not arg:
     await ctx.send(generate_blacklist(cur), delete_after=15)
     cur.close()
     conn.close()
