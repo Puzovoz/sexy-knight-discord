@@ -15,6 +15,56 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 
 bot = commands.Bot(command_prefix='SxK ')
 
+async def update_birthdays(cur):
+  current_date = datetime.datetime.utcnow()
+  cur.execute("(SELECT * FROM members "
+              "WHERE "
+              "  birthday > '2036-{0.month}-{0.day}' "
+              "ORDER BY "
+              "  birthday ASC) "
+              "UNION ALL "
+              "(SELECT * FROM members "
+              "WHERE "
+              "  birthday IS NOT NULL "
+              "ORDER BY "
+              "  birthday ASC) "
+              "LIMIT 5;".format(current_date))
+  
+  channel = bot.get_channel(604388374324838532)
+  birthday_list = await channel.fetch_message(657232655196094464)
+  
+  months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ]  
+  ordinal = lambda n: "%d%s" % (n, {1:"st", 2:"nd", 3:"rd"}
+                                .get(n if n<20 else n%10, "th"))  
+  birthday_result = cur.fetchall()
+
+  await birthday_list.edit(content="**BIRTHDAYS**\n"
+                           "These knights will have a birthday soon!\n```"
+                            + "\n".join("{0}{1}{2:>4} {3}".format(
+                                 row[1],
+                                 # Regular Python formatting works
+                                 # incorrectly with Unicode characters,
+                                 # so a manual method was implemented
+                                 ' ' * (25-len(''.join(c for c in row[1]
+                                                       if combining(c)==0))),
+                                 ordinal(int(row[2].day)),
+                                 months[int(row[2].month)-1])
+                                 for row in birthday_result)
+                            + "\n```")
+
 # Command for administrators that works with a pinned message, blacklist.
 # `SxK blacklist`: passing no arguments will briefly show the list in chat.
 # `SxK blacklist name`: passing a name will add that name to the blacklist
@@ -87,23 +137,29 @@ async def blacklist(ctx, arg=''):
 # Example: `SxK birthday 01.01`
 @bot.command()
 async def birthday(ctx, arg):
+  for i in ".-/":
+    char_index = arg.find(i)
+    if char_index >= 0: break
+  
   try:
-    if  int(arg[:2])  in range(1, 32) \
-    and int(arg[3:5]) in range(1, 13) \
-    and arg[2]        == ".":
+    if  char_index >= 0 \
+    and int(arg[:char_index])               in range(1, 32) \
+    and int(arg[char_index+1:char_index+3]) in range(1, 13):
       author_id = str(ctx.author.id)
+      birth_date = f"{arg[char_index+1:char_index+3]:0>2}-{arg[:char_index]:0>2}"
       
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
       
       cur.execute("INSERT INTO members (id, name, birthday) "
-                  "VALUES ('{0}', '{1}', '{2}') "
+                  "VALUES ('{0}', '{1}', '2036-{2}') "
                   "ON CONFLICT (id) DO UPDATE "
-                  "SET birthday='{2}';".format(author_id,
-                                               ctx.author.name,
-                                               arg[:5]))
+                  "SET birthday='2036-{2}', "
+                  "name='{1}';".format(author_id,
+                                       ctx.author.name,
+                                       birth_date))
       
-      conn.commit()
+      conn.commit()      
       
       months = [
         "January",
@@ -118,40 +174,18 @@ async def birthday(ctx, arg):
         "October",
         "November",
         "December"
-      ]
+      ]      
       ordinal = lambda n: "%d%s" % (n, {1:"st", 2:"nd", 3:"rd"}
                                     .get(n if n<20 else n%10, "th"))
       
-      channel = bot.get_channel(604388374324838532)
-      birthday_list = await channel.fetch_message(657232655196094464)
-      cur.execute("SELECT * FROM members "
-                  "WHERE "
-                  "  birthday IS NOT NULL "
-                  "ORDER BY "
-                  "  SUBSTRING(birthday, 4, 2) ASC,"
-                  "  SUBSTRING(birthday, 1, 2) ASC;")
-      birthday_result = cur.fetchall()
-      
-      # Update pinned message with a list of all birthdays
-      await birthday_list.edit(content="```\n"
-                               + "\n".join("{0}{1}{2:>4} {3}".format(
-                                 row[1],
-                                 # Regular Python formatting works
-                                 # incorrectly with Unicode characters,
-                                 # so a manual method was implemented
-                                 ' ' * (25-len(''.join(c for c in row[1]
-                                                       if combining(c)==0))),
-                                 ordinal(int(row[2][:2])),
-                                 months[int(row[2][3:5])-1])
-                                 for row in birthday_result)
-                               + "\n```")
+      await update_birthdays(cur)
       
       cur.close()
       conn.close()
       
       await ctx.send("Success! Saved {0} of {1} birthday "
-                     "for <@{2}>.".format(ordinal(int(arg[:2])),
-                                          months[int(arg[3:5])-1],
+                     "for <@{2}>.".format(ordinal(int(birth_date[3:])),
+                                          months[int(birth_date[:2])-1],
                                           author_id))
     else:
       await ctx.send("That doesn't look right.\n"
@@ -166,19 +200,19 @@ async def check_for_birthday():
   while True:
     current_date = datetime.datetime.utcnow()
     channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
-    if current_date.hour == 12 and channel:
-      formatted_date = "{0.day}.{0.month}".format(current_date)      
-      
+    if current_date.hour == 12 and channel:      
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
       cur.execute("SELECT * FROM members "
-                  "WHERE birthday='{0}'".format(formatted_date))      
+                  "WHERE birthday='2036-{0.month}-{0.day}'".format(current_date))
       
       for member in cur.fetchall():
         await channel.send("@everyone, "
                            "it's <@{0}>'s birthday today! 🥳\n "
                            "🎉🎉 Woo! 🎉🎉".format(member[0]))
       
+      await update_birthdays(cur)
+            
       cur.close()
       conn.close()
       
