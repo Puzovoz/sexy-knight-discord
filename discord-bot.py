@@ -103,7 +103,7 @@ async def blacklist(ctx, arg=''):
   if name[:2] == name[-2:] == "~~":
     name = name.strip("~*")
     cur.execute("DELETE FROM blacklist "
-                "WHERE name='{0}'".format(name))
+                "WHERE name=%s", (name))
     conn.commit()
     
     if cur.rowcount > 0:
@@ -118,7 +118,7 @@ async def blacklist(ctx, arg=''):
     try:
       name = name.strip("~*")
       cur.execute("INSERT INTO blacklist (name) "
-                  "VALUES ('{0}');".format(name))
+                  "VALUES (%s);", (name))
       conn.commit()
       
       await update_blacklist(cur)
@@ -146,18 +146,18 @@ async def birthday(ctx, arg):
     and int(arg[:char_index])               in range(1, 32) \
     and int(arg[char_index+1:char_index+3]) in range(1, 13):
       author_id = str(ctx.author.id)
-      birth_date = f"{arg[char_index+1:char_index+3]:0>2}-{arg[:char_index]:0>2}"
+      birth_date = f"2036-{arg[char_index+1:char_index+3]:0>2}-{arg[:char_index]:0>2}"
       
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
       
       cur.execute("INSERT INTO members (id, name, birthday) "
-                  "VALUES ('{0}', '{1}', '2036-{2}') "
+                  "VALUES (%(id)s, %(name)s, %(birthday)s) "
                   "ON CONFLICT (id) DO UPDATE "
-                  "SET birthday='2036-{2}', "
-                  "name='{1}';".format(author_id,
-                                       ctx.author.name,
-                                       birth_date))
+                  "SET birthday=%(birthday)s, "
+                  "name=%(name)s;", {'id': str(author_id),
+                                     'name': ctx.author.name,
+                                     'birthday': birth_date})
       
       conn.commit()      
       
@@ -184,8 +184,8 @@ async def birthday(ctx, arg):
       conn.close()
       
       await ctx.send("Success! Saved {0} of {1} birthday "
-                     "for <@{2}>.".format(ordinal(int(birth_date[3:])),
-                                          months[int(birth_date[:2])-1],
+                     "for <@{2}>.".format(ordinal(int(birth_date[8:])),
+                                          months[int(birth_date[5:7])-1],
                                           author_id))
     else:
       await ctx.send("That doesn't look right.\n"
@@ -199,12 +199,13 @@ async def birthday(ctx, arg):
 async def check_for_birthday():
   while True:
     current_date = datetime.datetime.utcnow()
+    current_date = current_date.replace(year=2036)
     channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
     if current_date.hour == 12 and channel:      
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
       cur.execute("SELECT * FROM members "
-                  "WHERE birthday='2036-{0.month}-{0.day}'".format(current_date))
+                  "WHERE birthday=%s", (current_date.date()))
       
       for member in cur.fetchall():
         await channel.send("@everyone, "
