@@ -205,7 +205,7 @@ async def check_for_birthday():
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
       cur.execute("SELECT * FROM members "
-                  "WHERE birthday=%s", (current_date.date()))
+                  "WHERE birthday=%s", [current_date.strftime('%Y-%m-%d')])
       
       for member in cur.fetchall():
         await channel.send("@everyone, "
