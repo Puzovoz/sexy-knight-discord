@@ -207,10 +207,17 @@ async def check_for_birthday():
       cur.execute("SELECT * FROM members "
                   "WHERE birthday=%s", [current_date.strftime('%Y-%m-%d')])
       
-      for member in cur.fetchall():
+      members = cur.fetchall()
+      if len(members) == 1:
         await channel.send("@everyone, "
-                           "it's <@{0}>'s birthday today! 🥳\n "
-                           "🎉🎉 Woo! 🎉🎉".format(member[0]))
+                           "it's <@{0}>'s birthday today! 🥳\n"
+                           "🎉🎉 Woo! 🎉🎉".format(members[0][0]))
+      elif len(numbers) > 1:
+        await channel.send("@everyone, what a coincidence!\n"
+                           "It's <@"
+                           + ">, <@".join(member[0] for member in members[:-1])
+                           + "> and <@{0}>'s birthday today!".format(members[-1][0])
+                           + " 🥳\n🎉🎉 Woo! 🎉🎉")
       
       await update_birthdays(cur)
             
