@@ -136,7 +136,68 @@ async def blacklist(ctx, arg=''):
 # The pinned message with birthday list will also be updated.
 # Example: `SxK birthday 01.01`
 @bot.command()
-async def birthday(ctx, arg):
+async def birthday(ctx, arg=''):
+  ordinal = lambda n: "%d%s" % (n, {1:"st", 2:"nd", 3:"rd"}
+                                .get(n if n<20 else n%10, "th"))
+  
+  months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ]  
+  
+  arg = arg.replace('!', '')
+  
+  # Checking birthday by given ping
+  if arg[:2] == "<@" and arg[-1]==">":
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    cur = conn.cursor()
+    
+    cur.execute("SELECT birthday FROM members "
+                "WHERE id=%s", [arg[2:-1]]) 
+    
+    birth_date = cur.fetchone()[0]
+    if birth_date is not None:
+      await ctx.send(f"{arg}'s birthday is on {ordinal(birth_date.day)} "
+               f"of {months[birth_date.month-1]}.")
+      
+    else:
+      await ctx.send("I don't know their birthday yet.")
+    
+    cur.close()
+    conn.close()
+    return
+  
+  
+  # Finding birthdays by given month
+  if arg.title() in months:
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    cur = conn.cursor()
+    
+    cur.execute("SELECT name, birthday FROM members "
+                "WHERE EXTRACT(MONTH FROM birthday)=%s "
+                "ORDER BY "
+                "  birthday ASC",
+                [months.index(arg.title())+1])
+    
+    await ctx.send("\n".join(f"{member[0]} — {ordinal(member[1].day)} "
+                             f"of {months[member[1].month-1]}"
+                             for member in cur.fetchall()))
+    
+    cur.close()
+    conn.close()
+    return
+  
+  
   for i in ".-/":
     char_index = arg.find(i)
     if char_index >= 0: break
@@ -159,24 +220,7 @@ async def birthday(ctx, arg):
                                      'name': ctx.author.name,
                                      'birthday': birth_date})
       
-      conn.commit()      
-      
-      months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December"
-      ]      
-      ordinal = lambda n: "%d%s" % (n, {1:"st", 2:"nd", 3:"rd"}
-                                    .get(n if n<20 else n%10, "th"))
+      conn.commit()
       
       await update_birthdays(cur)
       
