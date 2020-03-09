@@ -255,7 +255,7 @@ async def check_for_birthday():
     if current_date.hour == 12 and channel:
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
-      if (calendar.isleap(current_date.year)
+      if (calendar.isleap(datetime.datetime.utcnow().year)
       and current_date.month == 2
       and current_date.day == 28):
         cur.execute("SELECT id FROM members "
@@ -266,7 +266,7 @@ async def check_for_birthday():
                     "WHERE birthday=%s", [current_date.strftime('%Y-%m-%d')])
       
       guild = bot.get_guild(508545461939077142)
-      members = [m for m in cur.fetchall() if guild.get_member(m[0]) is not None]
+      members = [m for m in cur.fetchall() if guild.get_member(int(m[0])) is not None]
       if len(members) == 1:
         await channel.send("@everyone, "
                            "it's <@{0}>'s birthday today! 🥳\n"
