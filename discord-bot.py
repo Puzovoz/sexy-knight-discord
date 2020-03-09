@@ -183,15 +183,21 @@ async def birthday(ctx, arg=''):
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
     
-    cur.execute("SELECT name, birthday FROM members "
+    cur.execute("SELECT name, birthday, id FROM members "
                 "WHERE EXTRACT(MONTH FROM birthday)=%s "
                 "ORDER BY "
                 "  birthday ASC",
                 [months.index(arg.title())+1])
     
-    await ctx.send("\n".join(f"{member[0]} — {ordinal(member[1].day)} "
-                             f"of {months[member[1].month-1]}"
-                             for member in cur.fetchall()))
+    guild = bot.get_guild(508545461939077142)
+    message = ''
+    for member in cur.fetchall():
+      user = guild.get_member(int(member[2]))
+      if user is None: continue
+      message += (f"{user.display_name} — {ordinal(member[1].day)} "
+                  f"of {months[member[1].month-1]}\n")
+    
+    await ctx.send(message)
     
     cur.close()
     conn.close()
@@ -251,7 +257,8 @@ async def check_for_birthday():
       cur.execute("SELECT * FROM members "
                   "WHERE birthday=%s", [current_date.strftime('%Y-%m-%d')])
       
-      members = cur.fetchall()
+      guild = bot.get_guild(508545461939077142)
+      members = [m for m in cur.fetchall() if guild.get_member(m[0]) is not None]
       if len(members) == 1:
         await channel.send("@everyone, "
                            "it's <@{0}>'s birthday today! 🥳\n"
