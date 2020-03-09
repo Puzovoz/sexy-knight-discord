@@ -3,6 +3,7 @@ import os
 from unicodedata import combining
 import psycopg2
 import datetime
+import calendar
 import discord
 from discord.ext import commands
 import asyncio
@@ -183,7 +184,7 @@ async def birthday(ctx, arg=''):
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
     
-    cur.execute("SELECT name, birthday, id FROM members "
+    cur.execute("SELECT id, birthday FROM members "
                 "WHERE EXTRACT(MONTH FROM birthday)=%s "
                 "ORDER BY "
                 "  birthday ASC",
@@ -192,7 +193,7 @@ async def birthday(ctx, arg=''):
     guild = bot.get_guild(508545461939077142)
     message = ''
     for member in cur.fetchall():
-      user = guild.get_member(int(member[2]))
+      user = guild.get_member(int(member[0]))
       if user is None: continue
       message += (f"{user.display_name} — {ordinal(member[1].day)} "
                   f"of {months[member[1].month-1]}\n")
@@ -251,11 +252,18 @@ async def check_for_birthday():
     current_date = datetime.datetime.utcnow()
     current_date = current_date.replace(year=2036)
     channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
-    if current_date.hour == 12 and channel:      
+    if current_date.hour == 12 and channel:
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
-      cur.execute("SELECT * FROM members "
-                  "WHERE birthday=%s", [current_date.strftime('%Y-%m-%d')])
+      if (calendar.isleap(current_date.year)
+      and current_date.month == 2
+      and current_date.day == 28):
+        cur.execute("SELECT id FROM members "
+                    "WHERE birthday=%s "
+                    "OR birthday='2036-02-29'", [current_date.strftime('%Y-%m-%d')])
+      else:
+        cur.execute("SELECT id FROM members "
+                    "WHERE birthday=%s", [current_date.strftime('%Y-%m-%d')])
       
       guild = bot.get_guild(508545461939077142)
       members = [m for m in cur.fetchall() if guild.get_member(m[0]) is not None]
