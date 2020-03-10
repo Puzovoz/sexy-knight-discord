@@ -250,20 +250,19 @@ async def birthday(ctx, arg=''):
 async def check_for_birthday():
   while True:
     current_date = datetime.datetime.utcnow()
-    current_date = current_date.replace(year=2036)
     channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
     if current_date.hour == 12 and channel:
       conn = psycopg2.connect(DATABASE_URL, sslmode='require')
       cur = conn.cursor()
-      if (calendar.isleap(datetime.datetime.utcnow().year)
+      if (not calendar.isleap(current_date.year)
       and current_date.month == 2
       and current_date.day == 28):
         cur.execute("SELECT id FROM members "
                     "WHERE birthday=%s "
-                    "OR birthday='2036-02-29'", [current_date.strftime('%Y-%m-%d')])
+                    "OR birthday='2036-02-29'", [current_date.strftime('2036-%m-%d')])
       else:
         cur.execute("SELECT id FROM members "
-                    "WHERE birthday=%s", [current_date.strftime('%Y-%m-%d')])
+                    "WHERE birthday=%s", [current_date.strftime('2036-%m-%d')])
       
       guild = bot.get_guild(508545461939077142)
       members = [m for m in cur.fetchall() if guild.get_member(int(m[0])) is not None]
