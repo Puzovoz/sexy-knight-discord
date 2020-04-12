@@ -14,7 +14,7 @@ TOKEN        = os.getenv('DISCORD_TOKEN')
 GUILD        = os.getenv('DISCORD_GUILD')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-bot = commands.Bot(command_prefix='sxk ', case_insensitive=True)
+bot = commands.Bot(command_prefix=('SxK ', 'Sxk ', 'sxk '))
 
 async def update_birthdays(cur):
   current_date = datetime.datetime.utcnow()
