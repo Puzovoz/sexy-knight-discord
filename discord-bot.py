@@ -73,7 +73,7 @@ async def update_birthdays(cur):
 # `SxK blacklist ~~name~~`: passing a name with strikethrough formatting
 # will instead remove that name from the blacklist.
 @bot.command()
-@commands.has_permissions(administrator=True)
+@commands.has_role('Staff')
 async def blacklist(ctx, arg=''):
   def generate_blacklist(cur):
     cur.execute("SELECT * FROM blacklist "
