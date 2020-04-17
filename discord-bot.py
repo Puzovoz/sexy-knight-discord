@@ -98,7 +98,8 @@ async def blacklist(ctx, arg=''):
     conn.close()
     
     await asyncio.sleep(15)
-    if not message.reactions:
+    updated_message = await ctx.fetch_message(message.id)
+    if not updated_message.reactions:
       await message.edit(content='This message was edited to hide outdated lists '
                          'and reduce littering in chat.')
     return
