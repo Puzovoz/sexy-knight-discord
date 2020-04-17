@@ -91,9 +91,16 @@ async def blacklist(ctx, arg=''):
   
   # The command will show the blacklist for 15 secs if no arguments are passed.
   if not arg:
-    await ctx.send(generate_blacklist(cur), delete_after=15)
+    message = await ctx.send(generate_blacklist(cur)
+                             + '\nReact to this message to prevent timed deletion.\n'
+                             'Doing so will result in outdated lists staying in history.')
     cur.close()
     conn.close()
+    
+    await asyncio.sleep(15)
+    if not message.reactions:
+      await message.edit('This message was edited to hide outdated lists '
+                         'and reduce littering in chat.')
     return
   
   # And will insert or delete the name from the database otherwise.
