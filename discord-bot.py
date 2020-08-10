@@ -256,6 +256,8 @@ async def birthday(ctx, arg=''):
                    "`dd.mm` format, like this: `24.05`.")
 
 async def check_for_birthday():
+  processed = set()
+  
   while True:
     current_date = datetime.datetime.utcnow()
     channel = bot.get_channel(604388374324838532)  # '#birthdays' ID
@@ -273,29 +275,31 @@ async def check_for_birthday():
                     "WHERE birthday=%s", [current_date.strftime('2036-%m-%d')])
       
       guild = bot.get_guild(508545461939077142)
-      members = [m for m in cur.fetchall() if guild.get_member(int(m[0])) is not None]
+      members = [m[0] for m in cur.fetchall() if guild.get_member(int(m)) is not None]
+      members = set(members) - processed
+      
       if len(members) == 1:
         await channel.send("@everyone, "
                            "it's <@{0}>'s birthday today! 🥳\n"
-                           "🎉🎉 Woo! 🎉🎉".format(members[0][0]))
+                           "🎉🎉 Woo! 🎉🎉".format(members[0]))
       elif len(members) > 1:
         await channel.send("@everyone, what a coincidence!\n"
                            "It's <@"
-                           + ">, <@".join(member[0] for member in members[:-1])
-                           + "> and <@{0}>'s birthday today!".format(members[-1][0])
+                           + ">, <@".join(member for member in members[:-1])
+                           + "> and <@{0}>'s birthday today!".format(members[-1])
                            + " 🥳\n🎉🎉 Woo! 🎉🎉")
       
+      processed += members
       await update_birthdays(cur)
             
       cur.close()
       conn.close()
       
-      # Prevent the bot from sending announcements
-      # multiple times in a single day
-      await asyncio.sleep(3600)
+    else:
+      processed = set()
     
-    # The coroutine works once 15 minutes
-    await asyncio.sleep(900)
+    # The coroutine works once a minute
+    await asyncio.sleep(60)
 
 if __name__ == "__main__":
   bot.loop.create_task(check_for_birthday())
