@@ -256,7 +256,7 @@ async def birthday(ctx, arg=''):
                    "`dd.mm` format, like this: `24.05`.")
 
 async def check_for_birthday():
-  processed = set()
+  processed = list()
   
   while True:
     current_date = datetime.datetime.utcnow()
@@ -275,8 +275,8 @@ async def check_for_birthday():
                     "WHERE birthday=%s", [current_date.strftime('2036-%m-%d')])
       
       guild = bot.get_guild(508545461939077142)
-      members = [m[0] for m in cur.fetchall() if guild.get_member(int(m)) is not None]
-      members = set(members) - processed
+      members = [m[0] for m in cur.fetchall() if guild.get_member(int(m[0])) is not None]
+      members = list(set(members) - set(processed))
       
       if len(members) == 1:
         await channel.send("@everyone, "
@@ -296,7 +296,7 @@ async def check_for_birthday():
       conn.close()
       
     else:
-      processed = set()
+      processed = list()
     
     # The coroutine works once a minute
     await asyncio.sleep(60)
