@@ -279,14 +279,13 @@ async def check_for_birthday():
       members = list(set(members) - set(processed))
       
       if len(members) == 1:
-        await channel.send("<@&745891123842515024>, "
-                           "it's <@{0}>'s birthday today! 🥳\n"
+        await channel.send("It's <@{0}>'s <@&745891123842515024> today! 🥳\n"
                            "🎉🎉 Woo! 🎉🎉".format(members[0]))
       elif len(members) > 1:
-        await channel.send("<@&745891123842515024>, what a coincidence!\n"
+        await channel.send("What a coincidence!\n"
                            "It's <@"
                            + ">, <@".join(member for member in members[:-1])
-                           + "> and <@{0}>'s birthday today!".format(members[-1])
+                           + "> and <@{0}>'s <@&745891123842515024> today!".format(members[-1])
                            + " 🥳\n🎉🎉 Woo! 🎉🎉")
       
       processed += members
