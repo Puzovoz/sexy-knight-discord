@@ -14,7 +14,10 @@ TOKEN        = os.getenv('DISCORD_TOKEN')
 GUILD        = os.getenv('DISCORD_GUILD')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-bot = commands.Bot(command_prefix=('SxK ', 'Sxk ', 'sxk '))
+intents = discord.Intents.default()
+intents.members = True
+
+bot = commands.Bot(command_prefix=('SxK ', 'Sxk ', 'sxk '), intents=intents)
 
 async def update_birthdays(cur):
   current_date = datetime.datetime.utcnow()
